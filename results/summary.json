@@ -1,0 +1,155 @@
+{
+  "n_courses": 200,
+  "variants": {
+    "2023 statechart, tuned robot": {
+      "n": 200,
+      "outcomes": {
+        "Success": 177,
+        "Wrong stop": 17,
+        "Stuck / timed out": 5,
+        "Fell off": 1
+      },
+      "success_pct": 88.5,
+      "median_time_s": 14.500000000000071,
+      "median_stop_past_bottom_m": 0.8073215899574775,
+      "chatter_per_run": 11.405,
+      "max_spin_deg": 86.7233900951712,
+      "runs_with_repeat_ramp": 0
+    },
+    "2023 statechart, random lab robot": {
+      "n": 200,
+      "outcomes": {
+        "Success": 75,
+        "Wrong stop": 101,
+        "Stuck / timed out": 23,
+        "Fell off": 1
+      },
+      "success_pct": 37.5,
+      "median_time_s": 16.4500000000001,
+      "median_stop_past_bottom_m": 0.8212233858773423,
+      "chatter_per_run": 13.58,
+      "max_spin_deg": 87.36202658759315,
+      "runs_with_repeat_ramp": 0
+    },
+    "2023, random robot, no accel filter": {
+      "n": 200,
+      "outcomes": {
+        "Success": 118,
+        "Wrong stop": 49,
+        "Stuck / timed out": 19,
+        "Fell off": 14
+      },
+      "success_pct": 59.0,
+      "median_time_s": 17.32500000000011,
+      "median_stop_past_bottom_m": 0.1545276510098037,
+      "chatter_per_run": 18.31,
+      "max_spin_deg": 96.63544888105378,
+      "runs_with_repeat_ramp": 0
+    },
+    "Upgraded, random lab robot": {
+      "n": 200,
+      "outcomes": {
+        "Success": 197,
+        "Stuck / timed out": 2,
+        "Wrong stop": 1
+      },
+      "success_pct": 98.5,
+      "median_time_s": 15.80000000000009,
+      "median_stop_past_bottom_m": 0.3291933987247724,
+      "chatter_per_run": 2.935,
+      "max_spin_deg": 114.49246788687127,
+      "runs_with_repeat_ramp": 0
+    },
+    "Upgraded, random robot, 700 mm/s": {
+      "n": 200,
+      "outcomes": {
+        "Success": 197,
+        "Wrong stop": 2,
+        "Stuck / timed out": 1
+      },
+      "success_pct": 98.5,
+      "median_time_s": 14.550000000000072,
+      "median_stop_past_bottom_m": 0.31322698474444177,
+      "chatter_per_run": 3.895,
+      "max_spin_deg": 127.89037905622186,
+      "runs_with_repeat_ramp": 0
+    }
+  },
+  "sweeps": {
+    "turn_slip_bias": {
+      "values": [
+        -0.05,
+        0.0,
+        0.05,
+        0.1,
+        0.15,
+        0.2
+      ],
+      "original": [
+        87.5,
+        82.5,
+        93.75,
+        93.75,
+        91.25,
+        95.0
+      ],
+      "upgraded": [
+        95.0,
+        96.25,
+        93.75,
+        95.0,
+        95.0,
+        95.0
+      ]
+    },
+    "wheel_mismatch": {
+      "values": [
+        0.0,
+        0.004,
+        0.008,
+        0.012,
+        0.016
+      ],
+      "original": [
+        93.75,
+        77.5,
+        40.0,
+        37.5,
+        8.75
+      ],
+      "upgraded": [
+        95.0,
+        98.75,
+        98.75,
+        100.0,
+        96.25
+      ]
+    },
+    "accel_offset": {
+      "values": [
+        -0.04,
+        -0.035,
+        -0.03,
+        -0.025,
+        -0.02,
+        -0.015
+      ],
+      "original": [
+        0.0,
+        1.25,
+        11.25,
+        67.5,
+        93.75,
+        97.5
+      ],
+      "upgraded": [
+        95.0,
+        95.0,
+        95.0,
+        95.0,
+        95.0,
+        95.0
+      ]
+    }
+  }
+}
