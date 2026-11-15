@@ -10,12 +10,11 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from kobuki import world  # noqa: E402
-from kobuki.fsm_original import SPEED_TEST, OriginalFSM  # noqa: E402
-from kobuki.fsm_upgraded import UpgradedFSM  # noqa: E402
+from kobuki.statechart import FEATURES, SPEED_TEST, HillClimbStatechart  # noqa: E402
 from kobuki.robot import Kobuki  # noqa: E402
 from kobuki.run import run_course  # noqa: E402
 
-TUNED = dict(wheel_mismatch=0.0, turn_slip_bias=0.10, accel_offset=-0.02)
+CORE = {f: False for f in FEATURES}
 EMPTY = world.Course(np.array(world.walls(), float), [])
 
 
@@ -63,12 +62,11 @@ class TestStatecharts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.runs = {}
-        for name, fsm_cls, kw in (("orig_tuned", OriginalFSM, TUNED), ("orig_random", OriginalFSM, None),
-                                  ("upgraded", UpgradedFSM, None)):
+        for name, fk in (("full", {}), ("core", CORE)):
             rs = []
             for seed in range(20):
                 course = world.make_course(np.random.default_rng(seed))
-                rs.append(run_course(fsm_cls(SPEED_TEST), course, seed, robot_kw=kw))
+                rs.append(run_course(HillClimbStatechart(SPEED_TEST, **fk), course, seed))
             cls.runs[name] = rs
 
     def states(self, name):
@@ -86,7 +84,7 @@ class TestStatecharts(unittest.TestCase):
 
     def test_side_step_only_after_drive(self):
         """Validation 1: no PDL/PDR straight after another PDL/PDR without passing through Drive."""
-        for st in self.states("orig_tuned") + self.states("orig_random"):
+        for st in self.states("core"):
             last_pd = None
             for s in st:
                 if s in ("PDL", "PDR"):
@@ -95,29 +93,28 @@ class TestStatecharts(unittest.TestCase):
                 elif s == "Drive":
                     last_pd = None
 
-    def test_tuned_original_mostly_succeeds(self):
-        ok = sum(r.outcome == "success" for r in self.runs["orig_tuned"])
-        self.assertGreaterEqual(ok, 16)
+    def test_full_statechart_handles_random_hardware(self):
+        ok = sum(r.outcome == "success" for r in self.runs["full"])
+        self.assertGreaterEqual(ok, 18)
 
-    def test_upgrade_beats_original_on_random_hardware(self):
-        up = sum(r.outcome == "success" for r in self.runs["upgraded"])
-        orig = sum(r.outcome == "success" for r in self.runs["orig_random"])
-        self.assertGreaterEqual(up, 18)
-        self.assertGreater(up, orig)
+    def test_features_add_robustness(self):
+        full = sum(r.outcome == "success" for r in self.runs["full"])
+        core = sum(r.outcome == "success" for r in self.runs["core"])
+        self.assertGreater(full, core)
 
 
 class TestMotionCompensation(unittest.TestCase):
     def test_hard_start_is_not_a_ramp(self):
-        """A full speed start on flat ground: the upgrade's slope estimate must stay under the ramp threshold."""
+        """A full speed start on flat ground: the compensated slope estimate must stay under the ramp threshold."""
         bot = Kobuki(np.random.default_rng(1), wheel_mismatch=0.0)
-        fsm = UpgradedFSM(SPEED_TEST)
+        fsm = HillClimbStatechart(SPEED_TEST)
         peak = -1.0
         for k in range(60):
             s = bot.read()
             ax, _ = fsm.accel(s)
             peak = max(peak, ax)
             drive(bot, 700 if k < 40 else 0, 700 if k < 40 else 0, 0.05)
-        self.assertLess(peak, UpgradedFSM.RAMP_UP)
+        self.assertLess(peak, HillClimbStatechart.RAMP_UP)
 
 
 if __name__ == "__main__":

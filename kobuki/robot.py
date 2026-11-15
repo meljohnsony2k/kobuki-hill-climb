@@ -1,6 +1,6 @@
 """
 Kobuki model: differential drive, bumpers, cliff sensors, wheel encoders, myRIO accelerometer
-and (for the upgrade only) the Kobuki's gyro.
+and the Kobuki's gyro.
 
 The hardware problems from the real project are modelled on purpose:
   - wheels don't match, so the robot drifts (each robot gets its own mismatch)
@@ -32,7 +32,7 @@ class Sensors:
     net_angle: float         # deg, from encoders (difference / wheelbase), CCW positive
     accel_x: float           # g, forward
     accel_y: float           # g, left
-    gyro_heading: float      # deg, CCW positive (only used by the upgraded controller)
+    gyro_heading: float      # deg, CCW positive
 
 
 class Kobuki:

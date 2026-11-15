@@ -1,52 +1,7 @@
 {
   "n_courses": 200,
   "variants": {
-    "2023 statechart, tuned robot": {
-      "n": 200,
-      "outcomes": {
-        "Success": 177,
-        "Wrong stop": 17,
-        "Stuck / timed out": 5,
-        "Fell off": 1
-      },
-      "success_pct": 88.5,
-      "median_time_s": 14.500000000000071,
-      "median_stop_past_bottom_m": 0.8073215899574775,
-      "chatter_per_run": 11.405,
-      "max_spin_deg": 86.7233900951712,
-      "runs_with_repeat_ramp": 0
-    },
-    "2023 statechart, random lab robot": {
-      "n": 200,
-      "outcomes": {
-        "Success": 75,
-        "Wrong stop": 101,
-        "Stuck / timed out": 23,
-        "Fell off": 1
-      },
-      "success_pct": 37.5,
-      "median_time_s": 16.4500000000001,
-      "median_stop_past_bottom_m": 0.8212233858773423,
-      "chatter_per_run": 13.58,
-      "max_spin_deg": 87.36202658759315,
-      "runs_with_repeat_ramp": 0
-    },
-    "2023, random robot, no accel filter": {
-      "n": 200,
-      "outcomes": {
-        "Success": 118,
-        "Wrong stop": 49,
-        "Stuck / timed out": 19,
-        "Fell off": 14
-      },
-      "success_pct": 59.0,
-      "median_time_s": 17.32500000000011,
-      "median_stop_past_bottom_m": 0.1545276510098037,
-      "chatter_per_run": 18.31,
-      "max_spin_deg": 96.63544888105378,
-      "runs_with_repeat_ramp": 0
-    },
-    "Upgraded, random lab robot": {
+    "Full statechart": {
       "n": 200,
       "outcomes": {
         "Success": 197,
@@ -60,7 +15,7 @@
       "max_spin_deg": 114.49246788687127,
       "runs_with_repeat_ramp": 0
     },
-    "Upgraded, random robot, 700 mm/s": {
+    "Full statechart, 700 mm/s": {
       "n": 200,
       "outcomes": {
         "Success": 197,
@@ -73,9 +28,134 @@
       "chatter_per_run": 3.895,
       "max_spin_deg": 127.89037905622186,
       "runs_with_repeat_ramp": 0
+    },
+    "Without heading hold": {
+      "n": 200,
+      "outcomes": {
+        "Success": 124,
+        "Wrong stop": 18,
+        "Stuck / timed out": 53,
+        "Fell off": 5
+      },
+      "success_pct": 62.0,
+      "median_time_s": 15.400000000000084,
+      "median_stop_past_bottom_m": 0.3316308508983168,
+      "chatter_per_run": 6.11,
+      "max_spin_deg": 88.06426556313654,
+      "runs_with_repeat_ramp": 0
+    },
+    "Without motion compensation": {
+      "n": 200,
+      "outcomes": {
+        "Success": 198,
+        "Stuck / timed out": 2
+      },
+      "success_pct": 99.0,
+      "median_time_s": 15.80000000000009,
+      "median_stop_past_bottom_m": 0.32899955184223995,
+      "chatter_per_run": 2.935,
+      "max_spin_deg": 114.49246788687127,
+      "runs_with_repeat_ramp": 0
+    },
+    "Without clean stop": {
+      "n": 200,
+      "outcomes": {
+        "Success": 196,
+        "Stuck / timed out": 2,
+        "Wrong stop": 2
+      },
+      "success_pct": 98.0,
+      "median_time_s": 15.85000000000009,
+      "median_stop_past_bottom_m": 0.5190747063891279,
+      "chatter_per_run": 5.13,
+      "max_spin_deg": 114.49246788687127,
+      "runs_with_repeat_ramp": 0
+    },
+    "Without motion compensation or clean stop": {
+      "n": 200,
+      "outcomes": {
+        "Success": 102,
+        "Wrong stop": 96,
+        "Stuck / timed out": 2
+      },
+      "success_pct": 51.0,
+      "median_time_s": 15.900000000000091,
+      "median_stop_past_bottom_m": 0.8398357516124482,
+      "chatter_per_run": 15.67,
+      "max_spin_deg": 114.49246788687127,
+      "runs_with_repeat_ramp": 0
+    },
+    "Without motion compensation, 700 mm/s": {
+      "n": 200,
+      "outcomes": {
+        "Success": 197,
+        "Wrong stop": 2,
+        "Stuck / timed out": 1
+      },
+      "success_pct": 98.5,
+      "median_time_s": 14.600000000000072,
+      "median_stop_past_bottom_m": 0.329002135571252,
+      "chatter_per_run": 3.885,
+      "max_spin_deg": 127.89037905622186,
+      "runs_with_repeat_ramp": 0
+    },
+    "Without obstacle escape": {
+      "n": 200,
+      "outcomes": {
+        "Success": 190,
+        "Wrong stop": 3,
+        "Stuck / timed out": 7
+      },
+      "success_pct": 95.0,
+      "median_time_s": 15.17500000000008,
+      "median_stop_past_bottom_m": 0.32732301929690255,
+      "chatter_per_run": 2.655,
+      "max_spin_deg": 124.88215063429605,
+      "runs_with_repeat_ramp": 0
+    },
+    "Core states only": {
+      "n": 200,
+      "outcomes": {
+        "Success": 75,
+        "Wrong stop": 101,
+        "Stuck / timed out": 23,
+        "Fell off": 1
+      },
+      "success_pct": 37.5,
+      "median_time_s": 16.4500000000001,
+      "median_stop_past_bottom_m": 0.8212233858773423,
+      "chatter_per_run": 13.58,
+      "max_spin_deg": 87.36202658759315,
+      "runs_with_repeat_ramp": 0
     }
   },
   "sweeps": {
+    "wheel_mismatch": {
+      "values": [
+        0.0,
+        0.004,
+        0.008,
+        0.012,
+        0.016
+      ],
+      "features": [
+        "heading_hold"
+      ],
+      "full": [
+        95.0,
+        98.75,
+        98.75,
+        100.0,
+        96.25
+      ],
+      "without": [
+        78.75,
+        71.25,
+        33.75,
+        17.5,
+        7.5
+      ]
+    },
     "turn_slip_bias": {
       "values": [
         -0.05,
@@ -85,44 +165,24 @@
         0.15,
         0.2
       ],
-      "original": [
-        87.5,
-        82.5,
-        93.75,
-        93.75,
-        91.25,
-        95.0
+      "features": [
+        "heading_hold"
       ],
-      "upgraded": [
+      "full": [
         95.0,
         96.25,
         93.75,
         95.0,
         95.0,
         95.0
-      ]
-    },
-    "wheel_mismatch": {
-      "values": [
-        0.0,
-        0.004,
-        0.008,
-        0.012,
-        0.016
       ],
-      "original": [
-        93.75,
-        77.5,
-        40.0,
-        37.5,
-        8.75
-      ],
-      "upgraded": [
-        95.0,
-        98.75,
-        98.75,
-        100.0,
-        96.25
+      "without": [
+        67.5,
+        62.5,
+        75.0,
+        78.75,
+        63.75,
+        65.0
       ]
     },
     "accel_offset": {
@@ -134,20 +194,24 @@
         -0.02,
         -0.015
       ],
-      "original": [
+      "features": [
+        "motion_comp",
+        "clean_stop"
+      ],
+      "full": [
+        95.0,
+        95.0,
+        95.0,
+        95.0,
+        95.0,
+        95.0
+      ],
+      "without": [
         0.0,
         1.25,
-        11.25,
-        67.5,
-        93.75,
-        97.5
-      ],
-      "upgraded": [
-        95.0,
-        95.0,
-        95.0,
-        95.0,
-        95.0,
+        12.5,
+        52.5,
+        88.75,
         95.0
       ]
     }

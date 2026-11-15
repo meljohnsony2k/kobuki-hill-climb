@@ -1,8 +1,9 @@
 """
-Monte Carlo comparison: the 2023 statechart vs the upgraded one over random courses and random
-"lab hardware" (every run gets its own wheel mismatch, turn slip and accelerometer offset).
+Monte Carlo design study over random courses and random "lab hardware" (every run gets its own
+wheel mismatch, turn slip and accelerometer offset). The full statechart is run, then again with
+each feature switched off, to measure what each one contributes.
 
-Writes results/summary.json. About 30 minutes on 2 cores.
+Writes results/summary.json. About 35 minutes on 2 cores.
 Run from the repo root:  python experiments/run_experiments.py
 """
 import json
@@ -15,30 +16,39 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from kobuki import world  # noqa: E402
-from kobuki.fsm_original import SPEED_TEST, OriginalFSM  # noqa: E402
-from kobuki.fsm_upgraded import UpgradedFSM  # noqa: E402
+from kobuki.statechart import FEATURES, SPEED_TEST, HillClimbStatechart  # noqa: E402
 from kobuki.run import run_course  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 N = 200
-TUNED = dict(wheel_mismatch=0.0, turn_slip_bias=0.10, accel_offset=-0.02)   # a robot like the one it was tuned on
+TYPICAL = dict(wheel_mismatch=0.0, turn_slip_bias=0.10, accel_offset=-0.02)   # mid range robot for sweeps
 FAST = dict(SPEED_TEST, drive=700, pending=600)
+CORE = {f: False for f in FEATURES}
 
 VARIANTS = {
-    "2023 statechart, tuned robot": ("orig", SPEED_TEST, TUNED, {}),
-    "2023 statechart, random lab robot": ("orig", SPEED_TEST, None, {}),
-    "2023, random robot, no accel filter": ("orig", SPEED_TEST, None, dict(use_filter=False)),
-    "Upgraded, random lab robot": ("up", SPEED_TEST, None, {}),
-    "Upgraded, random robot, 700 mm/s": ("up", FAST, None, {}),
+    "Full statechart": (SPEED_TEST, {}),
+    "Full statechart, 700 mm/s": (FAST, {}),
+    "Without heading hold": (SPEED_TEST, dict(heading_hold=False)),
+    "Without motion compensation": (SPEED_TEST, dict(motion_comp=False)),
+    "Without clean stop": (SPEED_TEST, dict(clean_stop=False)),
+    "Without motion compensation or clean stop": (SPEED_TEST, dict(motion_comp=False, clean_stop=False)),
+    "Without motion compensation, 700 mm/s": (FAST, dict(motion_comp=False)),
+    "Without obstacle escape": (SPEED_TEST, dict(obstacle_escape=False)),
+    "Core states only": (SPEED_TEST, CORE),
+}
+SWEEPS = {   # hardware property -> (values, feature that should handle it)
+    "wheel_mismatch": ([0.0, 0.004, 0.008, 0.012, 0.016], ("heading_hold",)),
+    "turn_slip_bias": ([-0.05, 0.0, 0.05, 0.10, 0.15, 0.20], ("heading_hold",)),
+    "accel_offset": ([-0.040, -0.035, -0.030, -0.025, -0.020, -0.015], ("motion_comp", "clean_stop")),
 }
 FAIL_GROUPS = {"success": "Success", "stuck": "Stuck / timed out", "fell": "Fell off",
                "stopped_early": "Wrong stop", "stopped_late": "Wrong stop", "overshot": "Wrong stop"}
 
 
 def one(args):
-    kind, speeds, robot_kw, fsm_kw, seed = args
+    speeds, robot_kw, fsm_kw, seed = args
     course = world.make_course(np.random.default_rng(seed))
-    fsm = (UpgradedFSM if kind == "up" else OriginalFSM)(speeds, **fsm_kw)
+    fsm = HillClimbStatechart(speeds, **fsm_kw)
     r = run_course(fsm, course, seed, keep_trace=True, robot_kw=robot_kw)
     states = [s for _, s in r.states]
     return dict(seed=seed, outcome=r.outcome, time=r.time, chatter=r.chatter, max_spin=r.max_spin_deg,
@@ -60,27 +70,24 @@ def summarise(rows):
 def main():
     out = dict(n_courses=N, variants={}, sweeps={})
     with Pool() as pool:
-        for name, (kind, sp, rk, fk) in VARIANTS.items():
-            rows = pool.map(one, [(kind, sp, rk, fk, s) for s in range(N)])
+        for name, (sp, fk) in VARIANTS.items():
+            rows = pool.map(one, [(sp, None, fk, s) for s in range(N)])
             out["variants"][name] = summarise(rows)
-            print(f"{name:40s} {out['variants'][name]['success_pct']:5.1f}%  {out['variants'][name]['outcomes']}",
+            print(f"{name:32s} {out['variants'][name]['success_pct']:5.1f}%  {out['variants'][name]['outcomes']}",
                   flush=True)
 
-        # robustness: change one hardware property at a time, the rest as on the tuned robot
-        sweeps = {"turn_slip_bias": [-0.05, 0.0, 0.05, 0.10, 0.15, 0.20],
-                  "wheel_mismatch": [0.0, 0.004, 0.008, 0.012, 0.016],
-                  "accel_offset": [-0.040, -0.035, -0.030, -0.025, -0.020, -0.015]}
-        for key, vals in sweeps.items():
+        # change one hardware property at a time (the rest mid range), with and without the feature
+        for key, (vals, feats) in SWEEPS.items():
             res = {}
-            for kind in ("orig", "up"):
+            for label, fk in (("full", {}), ("without", {f: False for f in feats})):
                 pct = []
                 for v in vals:
-                    rk = dict(TUNED, **{key: v})
-                    rows = pool.map(one, [(kind, SPEED_TEST, rk, {}, s) for s in range(80)])
+                    rk = dict(TYPICAL, **{key: v})
+                    rows = pool.map(one, [(SPEED_TEST, rk, fk, s) for s in range(80)])
                     pct.append(100 * sum(r["outcome"] == "success" for r in rows) / len(rows))
-                res[kind] = pct
-                print(key, kind, pct, flush=True)
-            out["sweeps"][key] = dict(values=vals, original=res["orig"], upgraded=res["up"])
+                res[label] = pct
+                print(key, label, pct, flush=True)
+            out["sweeps"][key] = dict(values=vals, features=list(feats), full=res["full"], without=res["without"])
 
     os.makedirs(os.path.join(ROOT, "results"), exist_ok=True)
     with open(os.path.join(ROOT, "results", "summary.json"), "w") as f:

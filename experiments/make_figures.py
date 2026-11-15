@@ -1,6 +1,6 @@
 """
-Figures for the README: outcome comparison, robustness sweeps, example paths and a side by side
-animation. Needs results/summary.json from run_experiments.py (and ffmpeg for the GIF).
+Figures for the README: design study outcomes, robustness sweeps, example paths and an animated
+run. Needs results/summary.json from run_experiments.py (and ffmpeg for the GIF).
 
 Run from the repo root:  python experiments/make_figures.py
 """
@@ -15,8 +15,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from kobuki import world  # noqa: E402
-from kobuki.fsm_original import SPEED_TEST, OriginalFSM  # noqa: E402
-from kobuki.fsm_upgraded import UpgradedFSM  # noqa: E402
+from kobuki.statechart import SPEED_TEST, HillClimbStatechart  # noqa: E402
 from kobuki.robot import R  # noqa: E402
 from kobuki.run import run_course  # noqa: E402
 
@@ -28,7 +27,10 @@ from matplotlib.patches import Circle, Polygon, Rectangle  # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLUE, ORANGE, AQUA, YELLOW = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
 INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e6e5e1", "#fcfcfb"
-EXAMPLE_SEED = 5
+EXAMPLE_SEEDS = (0, 2, 4)
+NICE = dict(heading_hold="heading hold", motion_comp="motion comp.", clean_stop="clean stop",
+            obstacle_escape="obstacle escape")
+GIF_SEED = 4
 LABEL = {"success": "made it", "stuck": "stuck", "fell": "fell off", "stopped_early": "stopped in the wrong place",
          "stopped_late": "stopped too far", "overshot": "overshot"}
 
@@ -57,7 +59,7 @@ def outcomes(summary):
             if pct > 0:
                 ax.barh(i, pct, left=left, color=col, height=0.62, edgecolor=SURFACE, linewidth=2)
                 if pct >= 7:
-                    ax.text(left + pct / 2, i, f"{pct:.0f}%", ha="center", va="center", fontsize=9,
+                    ax.text(left + pct / 2, i, f"{pct:.1f}".rstrip("0").rstrip(".") + "%", ha="center", va="center", fontsize=9,
                             color="white" if col in (BLUE, ORANGE) else INK)
             left += pct
     ax.set_yticks(range(len(names)))
@@ -81,13 +83,14 @@ def robustness(summary):
         style(ax)
         sw = summary["sweeps"][key]
         x = np.array(sw["values"]) * k
-        ax.plot(x, sw["original"], "-o", color=ORANGE, lw=2, ms=5, markeredgecolor=SURFACE, label="2023 statechart")
-        ax.plot(x, sw["upgraded"], "-o", color=BLUE, lw=2, ms=5, markeredgecolor=SURFACE, label="Upgraded")
+        feat = "stop sensing" if len(sw["features"]) > 1 else NICE[sw["features"][0]]
+        ax.plot(x, sw["without"], "-o", color=ORANGE, lw=2, ms=5, markeredgecolor=SURFACE, label=f"without {feat}")
+        ax.plot(x, sw["full"], "-o", color=BLUE, lw=2, ms=5, markeredgecolor=SURFACE, label="full statechart")
+        ax.legend(frameon=False, loc="lower right" if key == "accel_offset" else "lower left", fontsize=8.5)
         ax.set_xlabel(lab)
         ax.set_ylim(0, 105)
     axs[0].set_ylabel("Success (%)")
-    axs[0].legend(frameon=False, loc="lower left")
-    fig.suptitle("Change one hardware property at a time (the rest as on the tuned robot)", x=0.06, ha="left",
+    fig.suptitle("Change one hardware property at a time (the rest mid range)", x=0.06, ha="left",
                  color=INK, fontsize=11)
     fig.tight_layout()
     fig.savefig(os.path.join(ROOT, "media", "robustness.png"), dpi=160, facecolor=SURFACE)
@@ -116,25 +119,24 @@ def draw_course(ax, course):
         s.set_visible(False)
 
 
-def example_runs(seed=EXAMPLE_SEED):
-    course = world.make_course(np.random.default_rng(seed))
-    runs = {}
-    for name, cls in (("2023 statechart", OriginalFSM), ("Upgraded", UpgradedFSM)):
-        runs[name] = run_course(cls(SPEED_TEST), course, seed, keep_trace=True, t_max=40)
-    return course, runs
+def example_runs():
+    out = []
+    for seed in EXAMPLE_SEEDS:
+        course = world.make_course(np.random.default_rng(seed))
+        out.append((course, run_course(HillClimbStatechart(SPEED_TEST), course, seed, keep_trace=True, t_max=40)))
+    return out
 
 
-def paths(course, runs):
-    fig, axs = plt.subplots(1, 2, figsize=(8, 7.6), facecolor=SURFACE)
-    for ax, (name, r), col in zip(axs, runs.items(), (ORANGE, BLUE)):
+def paths(examples):
+    fig, axs = plt.subplots(1, len(examples), figsize=(11, 7.4), facecolor=SURFACE)
+    for ax, (course, r) in zip(axs, examples):
         draw_course(ax, course)
         tr = r.trace
-        ax.plot(tr[:, 1], tr[:, 2], color=col, lw=2, zorder=3)
-        ax.add_patch(Circle((tr[-1, 1], tr[-1, 2]), R, fill=False, color=col, lw=2, zorder=4))
-        ax.set_title(f"{name}: {LABEL[r.outcome]}" + (f" in {r.time:.1f} s" if r.outcome == "success" else ""),
-                     fontsize=10)
-    fig.suptitle("Same course, same robot hardware", x=0.05, ha="left", color=INK, fontsize=12)
-    fig.tight_layout()
+        ax.plot(tr[:, 1], tr[:, 2], color=BLUE, lw=2, zorder=3)
+        ax.add_patch(Circle((tr[-1, 1], tr[-1, 2]), R, fill=False, color=BLUE, lw=2, zorder=4))
+        ax.set_title(f"{LABEL[r.outcome]}" + (f" in {r.time:.1f} s" if r.outcome == "success" else ""), fontsize=10)
+    fig.suptitle("Three random courses, three random robots", x=0.05, ha="left", color=INK, fontsize=12)
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
     fig.savefig(os.path.join(ROOT, "media", "example_paths.png"), dpi=160, facecolor=SURFACE)
     plt.close(fig)
 
@@ -148,28 +150,29 @@ def state_at(log, t):
     return s
 
 
-def animation(course, runs, every=0.15):
-    t_end = max(r.trace[-1, 0] for r in runs.values()) + 1.0
+def animation(seed=GIF_SEED, every=0.15):
+    course = world.make_course(np.random.default_rng(seed))
+    r = run_course(HillClimbStatechart(SPEED_TEST), course, seed, keep_trace=True, t_max=40)
+    tr = r.trace
+    t_end = tr[-1, 0] + 1.0
     tmp = tempfile.mkdtemp()
     k = 0
     for t in np.arange(0, t_end, every):
-        fig, axs = plt.subplots(1, 2, figsize=(6.4, 5.8), facecolor=SURFACE, dpi=70)
-        for ax, (name, r), col in zip(axs, runs.items(), (ORANGE, BLUE)):
-            draw_course(ax, course)
-            tr = r.trace
-            i = min(np.searchsorted(tr[:, 0], t), len(tr) - 1)
-            ax.plot(tr[:i + 1, 1], tr[:i + 1, 2], color=col, lw=1.6, alpha=0.8, zorder=3)
-            x, y, psi = tr[i, 1], tr[i, 2], tr[i, 3]
-            ax.add_patch(Circle((x, y), R, color=col, alpha=0.9, zorder=4))
-            ax.plot([x, x - 0.3 * np.sin(psi)], [y, y + 0.3 * np.cos(psi)], color=INK, lw=1.5, zorder=5)
-            done = t >= tr[-1, 0]
-            st = LABEL[r.outcome] if done else state_at(r.states, t)
-            ax.set_title(f"{name}\n{min(t, tr[-1, 0]):4.1f} s  ·  {st}", fontsize=9)
+        fig, ax = plt.subplots(figsize=(3.6, 5.8), facecolor=SURFACE, dpi=80)
+        draw_course(ax, course)
+        i = min(np.searchsorted(tr[:, 0], t), len(tr) - 1)
+        ax.plot(tr[:i + 1, 1], tr[:i + 1, 2], color=BLUE, lw=1.6, alpha=0.8, zorder=3)
+        x, y, psi = tr[i, 1], tr[i, 2], tr[i, 3]
+        ax.add_patch(Circle((x, y), R, color=BLUE, alpha=0.9, zorder=4))
+        ax.plot([x, x - 0.3 * np.sin(psi)], [y, y + 0.3 * np.cos(psi)], color=INK, lw=1.5, zorder=5)
+        done = t >= tr[-1, 0]
+        st = LABEL[r.outcome] if done else state_at(r.states, t)
+        ax.set_title(f"{min(t, tr[-1, 0]):4.1f} s  ·  {st}", fontsize=9)
         fig.tight_layout()
         fig.savefig(os.path.join(tmp, f"{k:04d}.png"), facecolor=SURFACE)
         plt.close(fig)
         k += 1
-    out = os.path.join(ROOT, "media", "race.gif")
+    out = os.path.join(ROOT, "media", "run.gif")
     subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-framerate", str(round(1 / every)), "-i",
                     os.path.join(tmp, "%04d.png"), "-vf",
                     "split[a][b];[a]palettegen=max_colors=64[p];[b][p]paletteuse=dither=bayer:bayer_scale=5",
@@ -183,9 +186,8 @@ def main():
         summary = json.load(f)
     outcomes(summary)
     robustness(summary)
-    course, runs = example_runs()
-    paths(course, runs)
-    animation(course, runs)
+    paths(example_runs())
+    animation()
 
 
 if __name__ == "__main__":
